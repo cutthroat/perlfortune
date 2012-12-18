@@ -169,9 +169,9 @@ Build index files
 
 =head1 DESCRIPTION
 
-This is a command-line tool that implements functionality similar to the BSD
-fortune(6).  Snap it in an environment where you cannot have the real fortune
-but you have at least version 5.10 of perl.
+This is a command-line tool that implements functionality similar to the
+fortune(6) program.  Snap it in an environment where you cannot have true
+fortune but you have at least version 5.10 of perl.
 
 The text file format for the cookies is the same.  However perlfortune uses its
 own index format.  You can build the index files by passing the B<-build>
@@ -183,7 +183,7 @@ particular file.  An alternative taking into account the number of cookies in
 each file may be implemented some time in the future.  Handling of directories
 would be nice too.
 
-More advanced features of fortune(6) are not implemented.
+More advanced features of the BSD fortune are not implemented.
 
 
 =head1 AUTHOR
