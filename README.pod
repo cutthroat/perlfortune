@@ -1,0 +1,57 @@
+=head1 NAME
+
+perlfortune - Very basic fortune cookies, hacked in Perl
+
+=head1 SYNOPSIS
+
+perlfortune [-help|-man|-build] <file ...>
+
+
+=head1 OPTIONS
+
+=over 8
+
+=item B<-help>
+
+Print brief help message
+
+=item B<-man>
+
+Show the manual page
+
+=item B<-build>
+
+Build index files
+
+=back
+
+
+=head1 DESCRIPTION
+
+This is a command-line tool that implements functionality similar to the BSD
+fortune(6).  Snap it in an environment where you cannot have the real fortune
+but you have at least version 5.10 of perl.
+
+The text file format for the cookies is the same.  However perlfortune uses its
+own index format.  You can build the index files by passing the B<-build>
+option.  Then for each input file a corresponding .idx file is created.
+
+When printing a fortune cookie first a file is chosen at randomly from the
+supplied list of input files.  Only then a cookie is selected from that
+particular file.  An alternative taking into account the number of cookies in
+each file may be implemented some time in the future.  Handling of directories
+would be nice too.
+
+More advanced features of fortune(6) are not implemented.
+
+
+=head1 AUTHOR
+
+L<Dimitar Dimitrov|https://github.com/cutthroat>
+
+
+=head1 SEE ALSO
+
+fortune(6),
+L<fortune-mod|http://ftp.ibiblio.org/pub/linux/games/amusements/fortune/>
+
