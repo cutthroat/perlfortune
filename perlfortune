@@ -1,0 +1,199 @@
+#!/usr/bin/env perl
+
+# Modern::Perl ftw!
+
+use 5.010_000;
+
+use strict;
+use warnings;
+
+use mro 'c3'; 
+
+use IO::File;
+use File::stat;
+use Pod::Usage;
+use Getopt::Long;
+
+
+# Index format identifier
+my $MAGIC = '0B7027043FF3478FB69B4A65CE84DDC3';
+
+# Record format
+my $RECORD_FMT = 'VV';
+my $RECORD_LEN = length pack($RECORD_FMT, 0, 0);
+
+# Parse options
+my $help = 0;
+my $man = 0;
+my $build = 0;
+GetOptions('build' => \$build, 'help' => \$help, 'man' => \$man )
+    or pod2usage(1);
+die("At most one command must be supplied") if $man + $help + $build > 1;
+pod2usage(-exitstatus => 0, -verbose => 2) if $man;
+pod2usage(-exitstatus => 0, -verbose => 0) if $help;
+
+# And... action!
+if ($build) {
+    # Build index files
+
+    die("At least one file with fortune cookies must be specified")
+        unless @ARGV;
+
+    for my $input_path (@ARGV) {
+        # Set output path
+        my $output_path = "${input_path}.idx";
+
+        # Open input
+        my $input = IO::File->new($input_path, '<');
+        defined $input
+            or die("Unable to open input file ${input_path}\n$!");
+        $input->binmode();
+
+        # Open output
+        my $output = IO::File->new($output_path, '>');
+        defined $output
+            or die("Unable to open output file ${output_path}\n$!");
+        $output->binmode();
+
+        # Write preamble
+        $output->write($MAGIC)
+            or die("Unable to write to output file ${output_path}\n$!");
+
+        # Scan input
+        my $count = 0;
+        my ($begin, $end, $next) = (0, 0, 0);
+        while (<$input>) {
+            $end = $next;
+            $next += length;
+            if (/^%$/) {
+                $count += 1;
+                $output->write(pack($RECORD_FMT, $begin, $end - $begin))
+                    or die("Unable to write to output file ${output_path}\n$!");
+                $begin = $next;
+            }
+        }
+        die("Unable to read from input file ${input_path}\n$!")
+            if $!;
+        if ($begin != $next) { # One more record
+            $end = $next;
+            $count += 1;
+            $output->write(pack($RECORD_FMT, $begin, $end - $begin))
+                or die("Unable to write to output file ${output_path}\n$!");
+        }
+    }
+}
+else {
+    # Print a fortune cookie
+
+    my $buffer;
+
+    # Select input file
+    die("At least one file with fortune cookies must be specified")
+        unless @ARGV;
+    my $input_path = $ARGV[rand @ARGV];
+    my $index_path = "${input_path}.idx";
+
+    # Open index
+    my $index = IO::File->new($index_path, '<');
+    defined $index
+        or die("Unable to open index file ${index_path}\n".
+               "Use -b to build it.\n$!");
+    $index->binmode();
+
+    # Check magic
+    $index->read($buffer, length $MAGIC) == length $MAGIC
+        or die("Cannot read magic from index file ${index_path}\n$!");
+    $buffer eq $MAGIC
+        or die("Wrong magic in index file ${index_path}");
+
+    # Find out record count
+    my $index_size = (-s $index) - length $MAGIC;
+    $index_size % $RECORD_LEN == 0
+        or die("Invalid size of index file ${index_path}");
+    my $record_count = $index_size / $RECORD_LEN;
+
+    # Choose a cookie
+    my $record_no = int(rand $record_count);
+    my $offset = length($MAGIC) + $record_no * $RECORD_LEN;
+    $index->seek($offset, SEEK_SET)
+        or die("Unable to seek at record in index file ${index_path}\n$!");
+    $index->read($buffer, $RECORD_LEN) == $RECORD_LEN
+        or die("Unable to read record from index file ${index_path}\n$!");
+    my ($begin, $span) = unpack($RECORD_FMT, $buffer);
+
+    # Close index
+    $index->close()
+        or die("Problem when closing index file ${index_path}\n$!");
+
+    # Open input
+    my $input = IO::File->new($input_path, '<');
+    defined $input
+        or die("Unable to open input file ${input_path}");
+    $input->binmode();
+
+    # Read and print the cookie
+    $input->seek($begin, SEEK_SET)
+        or die("Untable to seek at cookie in input file ${input_path}\n$!");
+    $input->read($buffer, $span) == $span
+        or die("Unable to read cookie from input file ${input_path}\n$!");
+    print $buffer;
+}
+
+=head1 NAME
+
+perlfortune - Very basic fortune cookies, hacked in Perl
+
+=head1 SYNOPSIS
+
+perlfortune [-help|-man|-build] <file ...>
+
+
+=head1 OPTIONS
+
+=over 8
+
+=item B<-help>
+
+Print brief help message
+
+=item B<-man>
+
+Show the manual page
+
+=item B<-build>
+
+Build index files
+
+=back
+
+
+=head1 DESCRIPTION
+
+This is a command-line tool that implements functionality similar to the BSD
+fortune(6).  Snap it in an environment where you cannot have the real fortune
+but you have at least version 5.10 of perl.
+
+The text file format for the cookies is the same.  However perlfortune uses its
+own index format.  You can build the index files by passing the B<-build>
+option.  Then for each input file a corresponding .idx file is created.
+
+When printing a fortune cookie first a file is chosen at randomly from the
+supplied list of input files.  Only then a cookie is selected from that
+particular file.  An alternative taking into account the number of cookies in
+each file may be implemented some time in the future.  Handling of directories
+would be nice too.
+
+More advanced features of fortune(6) are not implemented.
+
+
+=head1 AUTHOR
+
+L<Dimitar Dimitrov|https://github.com/cutthroat>
+
+
+=head1 SEE ALSO
+
+fortune(6),
+L<fortune-mod|http://ftp.ibiblio.org/pub/linux/games/amusements/fortune/>
+
+=cut
