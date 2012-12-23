@@ -7,10 +7,7 @@ use 5.010_000;
 use strict;
 use warnings;
 
-use mro 'c3'; 
-
 use IO::File;
-use File::stat;
 use Pod::Usage;
 use Getopt::Long;
 
@@ -28,9 +25,12 @@ my $man = 0;
 my $build = 0;
 GetOptions('build' => \$build, 'help' => \$help, 'man' => \$man )
     or pod2usage(1);
-die("At most one command must be supplied") if $man + $help + $build > 1;
-pod2usage(-exitstatus => 0, -verbose => 2) if $man;
-pod2usage(-exitstatus => 0, -verbose => 0) if $help;
+die("At most one command must be supplied")
+    if $man + $help + $build > 1;
+pod2usage(-exitstatus => 0, -verbose => 2)
+    if $man;
+pod2usage(-exitstatus => 0, -verbose => 0)
+    if $help;
 
 # And... action!
 if ($build) {
